@@ -22,10 +22,12 @@ endif()
 
 macro(build_freetype)
   set(extra_cmake_args)
-  set(FREETYPE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+  set(FREETYPE_C_FLAGS ${CMAKE_C_FLAGS})
 
-  if(WIN32)
-    list(APPEND FREETYPE_CXX_FLAGS "/w")
+  if(UNIX)
+    list(APPEND FREETYPE_C_FLAGS "-fPIC")
+  elseif(WIN32)
+    list(APPEND FREETYPE_C_FLAGS "/w")
     list(APPEND extra_cmake_args "-DCMAKE_C_FLAGS=/w")
   endif()
 
@@ -35,7 +37,7 @@ macro(build_freetype)
     list(APPEND extra_cmake_args "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}")
     list(APPEND extra_cmake_args "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}")
   endif()
-  list(APPEND extra_cmake_args "-DCMAKE_CXX_FLAGS=${FREETYPE_CXX_FLAGS}")
+  list(APPEND extra_cmake_args "-DCMAKE_C_FLAGS=${FREETYPE_C_FLAGS}")
 
   include(ExternalProject)
   ExternalProject_Add(freetype-2.8.1
@@ -62,7 +64,9 @@ macro(build_zlib)
   set(extra_cmake_args)
   set(ZLIB_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 
-  if(WIN32)
+  if(UNIX)
+    list(APPEND ZLIB_CXX_FLAGS "-fPIC")
+  elseif(WIN32)
     list(APPEND ZLIB_CXX_FLAGS "/w")
     list(APPEND extra_cmake_args "-DCMAKE_C_FLAGS=/w")
   endif()
@@ -155,9 +159,9 @@ macro(build_ogre)
   endif()
 
   include(ExternalProject)
-  ExternalProject_Add(ogre-master-ca665a6
-    URL https://github.com/OGRECave/ogre/archive/v1.10.12.zip
-    URL_MD5 c8d2626270d576a98cc40ea194fdb39e
+  ExternalProject_Add(ogre-v2
+    URL https://bitbucket.org/sinbad/ogre/get/v2-1.zip
+    URL_MD5 abc425898f82706b12002f492863f3a5
     TIMEOUT 1200
     LOG_CONFIGURE ${should_log}
     LOG_BUILD ${should_log}
@@ -177,14 +181,14 @@ macro(build_ogre)
       ${extra_cmake_args}
       -Wno-dev
     PATCH_COMMAND
-      ${patch_exe} -p1 -N < ${CMAKE_CURRENT_SOURCE_DIR}/ogre-ca665a6-patch.diff
+      ${patch_exe} -p1 -N < ${CMAKE_CURRENT_SOURCE_DIR}/deboost.patch
   )
 
   if(BUILDING_FREETYPE_LOCALLY)
-    add_dependencies(ogre-master-ca665a6 freetype-2.8.1)
+    add_dependencies(ogre-v2 freetype-2.8.1)
   endif()
   if(BUILDING_ZLIB_LOCALLY)
-    add_dependencies(ogre-master-ca665a6 zlib-1.2.11)
+    add_dependencies(ogre-v2 zlib-1.2.11)
   endif()
 
   # The external project will install to the build folder, but we'll install that on make install.
@@ -195,6 +199,15 @@ macro(build_ogre)
       ${CMAKE_INSTALL_PREFIX}/opt/rviz_ogre_vendor
   )
 endmacro()
+
+find_package(freetype2 QUIET)
+if(freetype2_DIR STREQUAL freetype2_DIR-NOTFOUND)
+  set(BUILDING_FREETYPE_LOCALLY 1)
+endif()
+find_package(zlib QUIET)
+if(zlib_DIR STREQUAL zlib_DIR-NOTFOUND)
+  set(BUILDING_ZLIB_LOCALLY 1)
+endif()
 
 if(BUILDING_FREETYPE_LOCALLY)
   build_freetype()
