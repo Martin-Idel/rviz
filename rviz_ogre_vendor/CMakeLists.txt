@@ -181,7 +181,8 @@ macro(build_ogre)
       ${extra_cmake_args}
       -Wno-dev
     PATCH_COMMAND
-      ${patch_exe} -p1 -N < ${CMAKE_CURRENT_SOURCE_DIR}/deboost.patch
+      ${patch_exe} -p1 -N < ${CMAKE_CURRENT_SOURCE_DIR}/deboost.patch &&
+      ${patch_exe} -p1 -N < ${CMAKE_CURRENT_SOURCE_DIR}/config-patch.patch
   )
 
   if(BUILDING_FREETYPE_LOCALLY)
